@@ -1,10 +1,11 @@
 import { createElement, appendContent } from './utils.js';
 
-export class ToDoApp {
+export class TodoApp {
+  #nextTodoId = 1;
+
   constructor(rootEl, todos = []) {
     this.rootEl = rootEl;
     this.todos = todos;
-    this.nextItemId = 1;
 
     this.init();
   }
@@ -13,57 +14,109 @@ export class ToDoApp {
     const headerEl = this.#createHeader();
 
     this.appEl = createElement('section', headerEl, ['todoapp']);
-
     this.#createMain();
 
-    this.newToDoFormEl.addEventListener('submit', this.#addToDo);
-    this.listEl.addEventListener('click', this.#removeToDo);
+    this.newTodoFormEl.addEventListener('submit', this.#addTodo);
+    this.listEl.addEventListener('click', this.#removeTodo);
   }
 
   render() {
     this.rootEl.append(this.appEl);
   }
 
-  #addToDo = (event) => {
+  destroy() {
+    this.rootEl.removeChild(this.appEl);
+  }
+
+  #addTodo = (event) => {
     event.preventDefault();
 
-    const { value } = this.newToDoFormEl.newTODO;
+    const { value } = this.newTodoFormEl.newTodo;
 
     if (!value) {
       return;
     }
 
-    const newToDo = {
+    const newTodo = {
       text: value,
-      id: this.nextItemId++,
+      id: this.#nextTodoId++,
       checked: false,
     };
 
-    this.todos.push(newToDo);
+    this.todos.push(newTodo);
+    this.#renderTodo(newTodo);
+  };
 
-    const itemEl = this.#createItem(newToDo);
+  #removeTodo = (id, todoEl) => () => {
+    this.todos = this.todos.filter(todo => todo.id !== id);
+    this.listEl.removeChild(todoEl);
 
-    appendContent(this.listEl, itemEl);
+    if (!this.todos.length) {
+      this.mainEl.removeChild(this.listEl);
+    }
+  };
 
-    this.newToDoFormEl.newTODO.value = '';
+  #toggleTodo = (id, todoEl) => (event) => {
+    const { checked } = event.target;
+
+    checked
+      ? todoEl.classList.add('completed')
+      : todoEl.classList.remove('completed');
+
+    this.todos.map(todoItem => {
+      if (todoItem.id === id) {
+        return {
+          ...todoItem,
+          checked,
+        };
+      }
+
+      return todoItem;
+    });
+  };
+
+  #renderTodo = (todo) => {
+    const todoEl = this.#createTodoEl(todo);
+
+    appendContent(this.listEl, todoEl);
+
+    this.newTodoFormEl.newTodo.value = '';
 
     if (!this.appEl.contains(this.mainEl)) {
       appendContent(this.appEl, this.mainEl);
     }
   };
 
-  #removeToDo = (id, itemEl) => () => {
-    this.todos = this.todos.filter(todo => todo.id !== id);
-    this.listEl.removeChild(itemEl);
+  #createTodoEl = ({ text, id }) => {
+    const toggleTodoEl = createElement('input', null, ['toggle'], {
+      type: 'checkbox',
+      id: id
+    });
+    const toggleTodoLabelEl = createElement('label', text, [], { for: id });
+    const removeButtonEl = createElement('button', null, ['destroy'], {
+      type: 'button',
+    });
+    const todoContentEl = createElement(
+      'div',
+      [toggleTodoEl, toggleTodoLabelEl, removeButtonEl],
+      ['view'],
+    );
+
+    const todoEl = createElement('li', todoContentEl);
+
+    removeButtonEl.addEventListener('click', this.#removeTodo(id, todoEl));
+    toggleTodoEl.addEventListener('change', this.#toggleTodo(id, todoEl));
+
+    return todoEl;
   };
 
   #createHeader = () => {
-    const inputAttributes = { placeholder: 'Input TODO', type: 'text', name: 'newTODO' };
+    const inputAttributes = { placeholder: 'Input Todo', type: 'text', name: 'newTodo' };
     const inputEl = createElement('input', null, ['new-todo'], inputAttributes);
-    this.newToDoFormEl = createElement('form', inputEl);
-    const titleEl = createElement('h1', 'TODO App');
+    this.newTodoFormEl = createElement('form', inputEl);
+    const titleEl = createElement('h1', 'Todo App');
 
-    return createElement('header', [titleEl, this.newToDoFormEl], ['header']);
+    return createElement('header', [titleEl, this.newTodoFormEl], ['header']);
   };
 
   #createMain = () => {
@@ -71,7 +124,12 @@ export class ToDoApp {
       id: 'toggle-all',
       type: 'checkbox',
     });
-    const labelToggleAllEl = createElement('label', null, [], { for: 'toggle-all' });
+    const labelToggleAllEl = createElement(
+      'label',
+      null,
+      [],
+      { for: 'toggle-all' },
+    );
     this.listEl = createElement('ul', null, ['todo-list']);
     this.mainEl =  createElement(
       'main',
@@ -79,26 +137,4 @@ export class ToDoApp {
       ['main'],
     );
   };
-
-  #createItem = ({ text, id }) => {
-    const toggleItemEl = createElement('input', null, ['toggle'], {
-      type: 'checkbox',
-      id: id
-    });
-    const toggleItemLabelEl = createElement('label', text, [], { for: id });
-    const removeEl = createElement('button', null, ['destroy'], {
-      type: 'button',
-    });
-    const itemContentEl = createElement(
-      'div',
-      [toggleItemEl, toggleItemLabelEl, removeEl],
-      ['view'],
-    );
-
-    const itemEl = createElement('li', itemContentEl);
-
-    removeEl.addEventListener('click', this.#removeToDo(id, itemEl));
-
-    return itemEl;
-  }
 }

@@ -1,6 +1,11 @@
-import { ToDoApp } from './todo-app.js';
+import { TodoApp } from './todo-app.js';
 
-const rootEl = document.querySelector('#app');
+const todoApp = new TodoApp(document.querySelector('#app'));
 
-const todoApp = new ToDoApp(rootEl);
 todoApp.render();
+
+// setTimeout(() => {
+//   todoApp.destroy();
+//
+//   setTimeout(() => todoApp.render(), 5000);
+// }, 10000);
